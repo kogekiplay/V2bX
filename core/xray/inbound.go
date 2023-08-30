@@ -22,7 +22,7 @@ func buildInbound(option *conf.Options, nodeInfo *panel.NodeInfo, tag string) (*
 	var err error
 	var network string
 	switch nodeInfo.Type {
-	case "v2ray":
+	case "vmess", "vless":
 		err = buildV2ray(option, nodeInfo, in)
 		network = nodeInfo.VAllss.Network
 	case "trojan":
@@ -105,7 +105,7 @@ func buildInbound(option *conf.Options, nodeInfo *panel.NodeInfo, tag string) (*
 		// Reality
 		in.StreamSetting.Security = "reality"
 		v := nodeInfo.VAllss
-		d, err := json.Marshal(v.RealityConfig.Dest)
+		d, err := json.Marshal(v.TlsSettings.ServerName)
 		if err != nil {
 			return nil, fmt.Errorf("marshal reality dest error: %s", err)
 		}
