@@ -1,6 +1,6 @@
 module github.com/InazumaV/V2bX
 
-go 1.20
+go 1.21
 
 require (
 	github.com/beevik/ntp v1.2.0

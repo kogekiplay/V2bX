@@ -10,8 +10,8 @@ type NodeConfig struct {
 }
 
 type rawNodeConfig struct {
-	ApiRaw *json.RawMessage `json:"ApiConfig"`
-	OptRaw *json.RawMessage `json:"Options"`
+	ApiRaw json.RawMessage `json:"ApiConfig"`
+	OptRaw json.RawMessage `json:"Options"`
 }
 
 type ApiConfig struct {
@@ -23,60 +23,74 @@ type ApiConfig struct {
 	RuleListPath string `json:"RuleListPath"`
 }
 
-type Options struct {
-	Core        string       `json:"Core"`
-	ListenIP    string       `json:"ListenIP"`
-	SendIP      string       `json:"SendIP"`
-	LimitConfig LimitConfig  `json:"LimitConfig"`
-	XrayOptions *XrayOptions `json:"XrayOptions"`
-	SingOptions *SingOptions `json:"SingOptions"`
-	CertConfig  *CertConfig  `json:"CertConfig"`
-}
-
 func (n *NodeConfig) UnmarshalJSON(data []byte) (err error) {
 	r := rawNodeConfig{}
 	err = json.Unmarshal(data, &r)
 	if err != nil {
 		return err
 	}
-	if r.ApiRaw != nil {
-		err = json.Unmarshal(*r.ApiRaw, &n.ApiConfig)
+	n.ApiConfig = ApiConfig{
+		APIHost: "http://127.0.0.1",
+		Timeout: 30,
+	}
+	if len(r.ApiRaw) > 0 {
+		err = json.Unmarshal(r.ApiRaw, &n.ApiConfig)
 		if err != nil {
 			return
 		}
 	} else {
-		n.ApiConfig = ApiConfig{
-			Timeout: 30,
-		}
 		err = json.Unmarshal(data, &n.ApiConfig)
 		if err != nil {
 			return
 		}
 	}
-	if r.OptRaw != nil {
-		data = *r.OptRaw
-		err = json.Unmarshal(data, &n.Options)
+
+	n.Options = Options{
+		ListenIP:   "0.0.0.0",
+		SendIP:     "0.0.0.0",
+		CertConfig: NewCertConfig(),
+	}
+	if len(r.OptRaw) > 0 {
+		err = json.Unmarshal(r.OptRaw, &n.Options)
 		if err != nil {
 			return
 		}
 	} else {
-		n.Options = Options{
-			Core:     "xray",
-			ListenIP: "0.0.0.0",
-			SendIP:   "0.0.0.0",
-		}
 		err = json.Unmarshal(data, &n.Options)
 		if err != nil {
 			return
 		}
 	}
-	switch n.Options.Core {
-	case "xray":
-		n.Options.XrayOptions = NewXrayOptions()
-		return json.Unmarshal(data, n.Options.XrayOptions)
-	case "sing":
-		n.Options.SingOptions = NewSingOptions()
-		return json.Unmarshal(data, n.Options.SingOptions)
-	}
 	return
+}
+
+type Options struct {
+	Core        string          `json:"Core"`
+	ListenIP    string          `json:"ListenIP"`
+	SendIP      string          `json:"SendIP"`
+	LimitConfig LimitConfig     `json:"LimitConfig"`
+	RawOptions  json.RawMessage `json:"RawOptions"`
+	XrayOptions *XrayOptions    `json:"XrayOptions"`
+	SingOptions *SingOptions    `json:"SingOptions"`
+	CertConfig  *CertConfig     `json:"CertConfig"`
+}
+
+func (o *Options) UnmarshalJSON(data []byte) error {
+	type opt Options
+	err := json.Unmarshal(data, (*opt)(o))
+	if err != nil {
+		return err
+	}
+	switch o.Core {
+	case "xray":
+		o.XrayOptions = NewXrayOptions()
+		return json.Unmarshal(data, o.XrayOptions)
+	case "sing":
+		o.SingOptions = NewSingOptions()
+		return json.Unmarshal(data, o.SingOptions)
+	default:
+		o.Core = ""
+		o.RawOptions = data
+	}
+	return nil
 }
