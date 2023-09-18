@@ -1,6 +1,11 @@
 package conf
 
 import (
+	"fmt"
+	"io"
+	"os"
+
+	"github.com/InazumaV/V2bX/common/json5"
 	"github.com/goccy/go-json"
 )
 
@@ -10,8 +15,9 @@ type NodeConfig struct {
 }
 
 type rawNodeConfig struct {
-	ApiRaw json.RawMessage `json:"ApiConfig"`
-	OptRaw json.RawMessage `json:"Options"`
+	Include string          `json:"Include"`
+	ApiRaw  json.RawMessage `json:"ApiConfig"`
+	OptRaw  json.RawMessage `json:"Options"`
 }
 
 type ApiConfig struct {
@@ -24,17 +30,30 @@ type ApiConfig struct {
 }
 
 func (n *NodeConfig) UnmarshalJSON(data []byte) (err error) {
-	r := rawNodeConfig{}
-	err = json.Unmarshal(data, &r)
+	rn := rawNodeConfig{}
+	err = json.Unmarshal(data, &rn)
 	if err != nil {
 		return err
 	}
+	if len(rn.Include) != 0 {
+		f, err := os.Open(rn.Include)
+		if err != nil {
+			return fmt.Errorf("open include file error: %s", err)
+		}
+		defer f.Close()
+		data, err = io.ReadAll(json5.NewTrimNodeReader(f))
+		err = json.Unmarshal(data, &rn)
+		if err != nil {
+			return fmt.Errorf("unmarshal include file error: %s", err)
+		}
+	}
+
 	n.ApiConfig = ApiConfig{
 		APIHost: "http://127.0.0.1",
 		Timeout: 30,
 	}
-	if len(r.ApiRaw) > 0 {
-		err = json.Unmarshal(r.ApiRaw, &n.ApiConfig)
+	if len(rn.ApiRaw) > 0 {
+		err = json.Unmarshal(rn.ApiRaw, &n.ApiConfig)
 		if err != nil {
 			return
 		}
@@ -50,8 +69,8 @@ func (n *NodeConfig) UnmarshalJSON(data []byte) (err error) {
 		SendIP:     "0.0.0.0",
 		CertConfig: NewCertConfig(),
 	}
-	if len(r.OptRaw) > 0 {
-		err = json.Unmarshal(r.OptRaw, &n.Options)
+	if len(rn.OptRaw) > 0 {
+		err = json.Unmarshal(rn.OptRaw, &n.Options)
 		if err != nil {
 			return
 		}
@@ -65,7 +84,9 @@ func (n *NodeConfig) UnmarshalJSON(data []byte) (err error) {
 }
 
 type Options struct {
+	Name        string          `json:"Name"`
 	Core        string          `json:"Core"`
+	CoreName    string          `json:"CoreName"`
 	ListenIP    string          `json:"ListenIP"`
 	SendIP      string          `json:"SendIP"`
 	LimitConfig LimitConfig     `json:"LimitConfig"`

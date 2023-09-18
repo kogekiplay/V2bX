@@ -56,7 +56,11 @@ func (c *Controller) Start() error {
 	if len(c.userList) == 0 {
 		return errors.New("add users error: not have any user")
 	}
-	c.tag = c.buildNodeTag(node)
+	if len(c.Options.Name) == 0 {
+		c.tag = c.buildNodeTag(node)
+	} else {
+		c.tag = c.Options.Name
+	}
 
 	// add limiter
 	l := limiter.AddLimiter(c.tag, &c.LimitConfig, c.userList)
@@ -112,5 +116,5 @@ func (c *Controller) Close() error {
 }
 
 func (c *Controller) buildNodeTag(node *panel.NodeInfo) string {
-	return fmt.Sprintf("%s-%s-%d", c.apiClient.APIHost, node.Type, node.Id)
+	return fmt.Sprintf("[%s]-%s:%d", c.apiClient.APIHost, node.Type, node.Id)
 }
