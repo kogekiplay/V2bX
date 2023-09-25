@@ -26,6 +26,7 @@
         "Server": "time.apple.com",
         "ServerPort": 0
       },
+      "DnsConfigPath": "/etc/V2bX/dns.json",
       // SingBox源配置文件目录，用于引用标准SingBox配置文件
       "OriginalPath": "/etc/V2bX/sing_origin.json"
     },
@@ -35,7 +36,7 @@
       "Log": {
         "Level": "info",
         "Timestamp": false
-      },
+      }
     },
     {
       "Type": "xray",
@@ -113,7 +114,9 @@
       // 开启 TCP Fast Open
       "EnableTFO": true,
 
-      // 设置 Domain Strategy
+      // 开启 DNS
+      "EnableDNS" : true,
+      // 设置 Domain Strategy 需要开启 DNS ，默认 AsIS
       // 可选 prefer_ipv4 / prefer_ipv6 / ipv4_only / ipv6_only
       "DomainStrategy": "ipv4_only",
 
@@ -180,10 +183,6 @@
       }
     },
     {
-      // 引用其他配置文件
-      "Include": "../example/config_full_node1.json",
-    },
-    {
       // xray内核
 
       "Core": "xray",
@@ -224,7 +223,7 @@
         "Alpn": "",
         "Path": "",
         "Dest": "",
-        "ProxyProtocolVer": 0,
+        "ProxyProtocolVer": 0
       }
     },
     {
@@ -235,16 +234,24 @@
         "ApiHost": "http://127.0.0.1",
         "ApiKey": "test",
         "NodeID": 33,
-        "Timeout": 30,
+        "Timeout": 30
       },
       // 类似旧配置文件 ControllerConfig 部分
       "Options": {
         "Core": "sing",
         "EnableProxyProtocol": true,
         "EnableTFO": true,
-        "DomainStrategy": "ipv4_only",
+        "DomainStrategy": "ipv4_only"
         // More
       }
+    },
+    {
+      // 引用本地其他配置文件
+      "Include": "../example/config_full_node1.json"
+    },
+    {
+      // 通过Http引用远端配置文件
+      "Include": "http://127.0.0.1:11451/config_full_node1.json"
     }
   ]
 }
